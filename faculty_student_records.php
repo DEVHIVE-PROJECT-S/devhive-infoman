@@ -51,15 +51,30 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 1100px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 40px; }
+        .container { max-width: 1200px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 48px 56px; }
         h2 { font-size: 2rem; margin-bottom: 24px; }
         .search-bar { margin-bottom: 18px; }
         .search-bar input { width: 300px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
         .export-btn { background: #fff; color: #764ba2; border: none; border-radius: 8px; padding: 10px 22px; font-weight: 600; margin-left: 18px; cursor: pointer; }
         .export-btn:hover { background: #e0e7ff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 18px; background: rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
-        th, td { padding: 14px 10px; text-align: left; }
-        th { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            font-size: 1.08rem;
+        }
+        th, td {
+            padding: 18px 16px;   /* Increased padding for more space */
+            text-align: left;
+            line-height: 1.6;     /* More vertical space */
+        }
+        th {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            font-weight: 600;
+        }
         tr:nth-child(even) { background: rgba(255,255,255,0.04); }
         tr:hover { background: rgba(255,255,255,0.15); }
         .view-btn { background: #5fc9c4; color: #fff; border: none; border-radius: 6px; padding: 7px 18px; font-weight: 600; cursor: pointer; text-decoration: none; }
@@ -98,7 +113,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     <th>LRN</th>
                     <th>Full Name</th>
                     <th>Section</th>
-                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -109,7 +123,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                         <td><?php echo htmlspecialchars($stu['lrn']); ?></td>
                         <td><?php echo htmlspecialchars(trim($stu['last_name'] . ', ' . $stu['first_name'] . ' ' . $stu['middle_name'])); ?></td>
                         <td><?php echo htmlspecialchars($stu['level_name'] . ' - ' . $stu['section_name']); ?></td>
-                        <td><a href="student_profile.php?student_id=<?php echo $stu['student_id']; ?>" class="view-btn"><i class="fa fa-eye"></i> View</a></td>
                     </tr>
                 <?php }} ?>
             </tbody>
@@ -117,4 +130,4 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         <a href="faculty_dashboard.php" class="btn"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>
