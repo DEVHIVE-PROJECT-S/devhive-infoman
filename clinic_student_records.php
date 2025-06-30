@@ -83,7 +83,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     <th>LRN</th>
                     <th>Full Name</th>
                     <th>Section</th>
-                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -94,7 +93,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                         <td><?php echo htmlspecialchars($stu['lrn']); ?></td>
                         <td><?php echo htmlspecialchars(trim($stu['last_name'] . ', ' . $stu['first_name'] . ' ' . $stu['middle_name'])); ?></td>
                         <td><?php echo htmlspecialchars($stu['level_name'] . ' - ' . $stu['section_name']); ?></td>
-                        <td><a href="student_profile.php?student_id=<?php echo $stu['student_id']; ?>" class="view-btn"><i class="fa fa-eye"></i> View</a></td>
                     </tr>
                 <?php }} ?>
             </tbody>
