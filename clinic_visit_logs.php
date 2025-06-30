@@ -85,7 +85,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     <th>Reason</th>
                     <th>Treatment</th>
                     <th>Staff</th>
-                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -98,7 +97,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                         <td><?php echo htmlspecialchars($v['symptoms']); ?></td>
                         <td><?php echo htmlspecialchars($v['treatment']); ?></td>
                         <td><?php echo ($v['staff_first'] ? htmlspecialchars(trim($v['staff_first'] . ' ' . $v['staff_middle'] . ' ' . $v['staff_last'])) : 'N/A'); ?></td>
-                        <td><a href="visit_details.php?visit_id=<?php echo $v['visit_id']; ?>" class="view-btn"><i class="fa fa-eye"></i> View</a></td>
                     </tr>
                 <?php }} ?>
             </tbody>

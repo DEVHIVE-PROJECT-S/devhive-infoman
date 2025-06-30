@@ -13,6 +13,22 @@ $stmt->bind_param('i', $clinic_id);
 $stmt->execute();
 $clinic = $stmt->get_result()->fetch_assoc();
 $clinic_full_name = htmlspecialchars(trim($clinic['first_name'] . ' ' . $clinic['middle_name'] . ' ' . $clinic['last_name']));
+
+// Search functionality
+$search_results = [];
+if (isset($_GET['search']) && trim($_GET['search']) !== '') {
+    $search = trim($_GET['search']);
+    $search_sql = "SELECT student_id, first_name, middle_name, last_name, lrn FROM students 
+                   WHERE student_id = ? OR lrn = ? 
+                   OR CONCAT(first_name, ' ', last_name) LIKE ? 
+                   OR CONCAT(first_name, ' ', middle_name, ' ', last_name) LIKE ?";
+    $like = '%' . $search . '%';
+    $stmt = $conn->prepare($search_sql);
+    $stmt->bind_param('isss', $search, $search, $like, $like);
+    $stmt->execute();
+    $search_results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
 // Fetch real stats from the database if available, otherwise set to 0
 $active_visits = 0; // TODO: Query for today's active visits
 $total_students = 0; // TODO: Query for total student records
@@ -28,6 +44,30 @@ $visit_count = $conn->query("SELECT COUNT(*) FROM visits")->fetch_row()[0];
 $med_count = $conn->query("SELECT COUNT(*) FROM medications")->fetch_row()[0];
 // Reports (just show total visits for now)
 $report_count = $visit_count;
+
+$selected_student = null;
+$student_medical = null;
+$student_visits = [];
+if (isset($_GET['student_id']) && is_numeric($_GET['student_id'])) {
+    $sid = intval($_GET['student_id']);
+    // Get student info
+    $stmt = $conn->prepare("SELECT * FROM students WHERE student_id = ?");
+    $stmt->bind_param('i', $sid);
+    $stmt->execute();
+    $selected_student = $stmt->get_result()->fetch_assoc();
+
+    // Get medical profile
+    $stmt = $conn->prepare("SELECT * FROM medical_profiles WHERE student_id = ?");
+    $stmt->bind_param('i', $sid);
+    $stmt->execute();
+    $student_medical = $stmt->get_result()->fetch_assoc();
+
+    // Get visit history
+    $stmt = $conn->prepare("SELECT * FROM visits WHERE student_id = ? ORDER BY visit_date DESC");
+    $stmt->bind_param('i', $sid);
+    $stmt->execute();
+    $student_visits = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -496,9 +536,40 @@ $report_count = $visit_count;
             
             <div class="search-section">
                 <form class="search-bar" method="get" action="#">
-                    <input type="text" name="search" placeholder="Search student by ID or name…">
+                    <input type="text" name="search" placeholder="Search student by ID or name…" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                     <button type="submit" class="search-btn">Search</button>
                 </form>
+<?php if (isset($_GET['search'])): ?>
+    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:18px 22px;margin-top:18px;">
+        <?php if (!empty($search_results)): ?>
+            <div style="font-weight:600;margin-bottom:10px;">Search Results:</div>
+            <table style="width:100%;color:#fff;border-collapse:collapse;">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.15);">
+                    <th style="text-align:left;padding:6px;">ID</th>
+                    <th style="text-align:left;padding:6px;">LRN</th>
+                    <th style="text-align:left;padding:6px;">Name</th>
+                    <th style="text-align:left;padding:6px;">Action</th>
+                </tr>
+                <?php foreach ($search_results as $student): ?>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <td style="padding:6px;"><?php echo $student['student_id']; ?></td>
+                    <td style="padding:6px;"><?php echo htmlspecialchars($student['lrn']); ?></td>
+                    <td style="padding:6px;"><?php echo htmlspecialchars(trim($student['first_name'].' '.$student['middle_name'].' '.$student['last_name'])); ?></td>
+                    <td style="padding:6px;">
+                        <form method="get" style="margin:0;">
+        <input type="hidden" name="search" value="<?php echo htmlspecialchars($_GET['search']); ?>">
+        <input type="hidden" name="student_id" value="<?php echo $student['student_id']; ?>">
+        <button type="submit" class="search-btn" style="padding:8px 18px;font-size:15px;">View Profile</button>
+    </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        <?php else: ?>
+            <div style="color:#fca5a5;">No student found matching "<b><?php echo htmlspecialchars($_GET['search']); ?></b>"</div>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
             </div>
             
             <div class="stats-grid">
@@ -560,7 +631,86 @@ $report_count = $visit_count;
                     </div>
                 </div>
             </div>
+<?php if ($selected_student): ?>
+<div id="studentModal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(102,126,234,0.18);z-index:9999;display:flex;align-items:center;justify-content:center;">
+    <div style="
+        background:rgba(255,255,255,0.98);
+        color:#3b3663;
+        border-radius:28px;
+        max-width:480px;
+        width:95%;
+        padding:40px 36px 32px 36px;
+        box-shadow:0 8px 40px rgba(102,126,234,0.18);
+        position:relative;
+        font-family:'Inter',sans-serif;
+        ">
+        <button onclick="document.getElementById('studentModal').style.display='none';document.body.style.overflow='';"
+            style="position:absolute;top:22px;right:22px;background:#e0e7ff;border:none;border-radius:50%;width:36px;height:36px;font-size:22px;cursor:pointer;color:#764ba2;box-shadow:0 2px 8px rgba(102,126,234,0.10);">
+            &times;
+        </button>
+        <h2 style="font-size:2rem;font-weight:700;margin-bottom:8px;color:#764ba2;letter-spacing:-1px;">
+            <?php echo htmlspecialchars(trim($selected_student['first_name'].' '.$selected_student['middle_name'].' '.$selected_student['last_name'])); ?>
+        </h2>
+        <div style="font-size:1.1rem;color:#5a5a7a;margin-bottom:18px;">
+            <b>LRN:</b> <?php echo htmlspecialchars($selected_student['lrn']); ?><br>
+            <b>Birthdate:</b> <?php echo htmlspecialchars($selected_student['birthdate']); ?><br>
+            <b>Gender:</b> <?php echo htmlspecialchars($selected_student['gender']); ?>
+        </div>
+        <hr style="border:0;border-top:1.5px solid #e0e7ff;margin:18px 0;">
+        <h3 style="font-size:1.1rem;font-weight:600;color:#764ba2;margin-bottom:8px;">Medical Profile</h3>
+        <?php if ($student_medical): ?>
+            <ul style="list-style:none;padding:0 0 8px 0;margin:0 0 18px 0;">
+                <li><b>Blood Type:</b> <?php echo htmlspecialchars($student_medical['blood_type']); ?></li>
+                <li><b>Disability Status:</b> <?php echo htmlspecialchars($student_medical['disability_status']); ?></li>
+                <li><b>Notes:</b> <?php echo htmlspecialchars($student_medical['notes']); ?></li>
+                <li><b>Current Medications:</b> <?php echo htmlspecialchars($student_medical['current_medications']); ?></li>
+                <li><b>Immunization Status:</b> <?php echo htmlspecialchars($student_medical['immunization_status']); ?></li>
+                <li><b>Emergency Contact:</b> <?php echo htmlspecialchars($student_medical['emergency_contact_name']); ?> (<?php echo htmlspecialchars($student_medical['emergency_contact_number']); ?>)</li>
+            </ul>
+        <?php else: ?>
+            <div style="color:#f87171;margin-bottom:18px;">No medical profile found.</div>
+        <?php endif; ?>
+        <hr style="border:0;border-top:1.5px solid #e0e7ff;margin:18px 0;">
+        <h3 style="font-size:1.1rem;font-weight:600;color:#764ba2;margin-bottom:8px;">Clinic Visit History</h3>
+        <?php if ($student_visits && count($student_visits) > 0): ?>
+            <div style="max-height:120px;overflow-y:auto;">
+            <table style="width:100%;font-size:0.98rem;border-collapse:collapse;">
+                <tr style="background:#e0e7ff;color:#764ba2;">
+                    <th style="padding:6px 8px;text-align:left;">Date</th>
+                    <th style="padding:6px 8px;text-align:left;">Symptoms</th>
+                    <th style="padding:6px 8px;text-align:left;">Diagnosis</th>
+                </tr>
+                <?php foreach ($student_visits as $visit): ?>
+                <tr style="background:rgba(118,75,162,0.06);">
+                    <td style="padding:6px 8px;"><?php echo htmlspecialchars($visit['visit_date']); ?></td>
+                    <td style="padding:6px 8px;"><?php echo htmlspecialchars($visit['symptoms']); ?></td>
+                    <td style="padding:6px 8px;"><?php echo htmlspecialchars($visit['diagnosis']); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+            </div>
+        <?php else: ?>
+            <div style="color:#f87171;">No visit history found.</div>
+        <?php endif; ?>
+    </div>
+</div>
+<script>
+    window.onload = function() {
+        if(document.getElementById('studentModal')) {
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    if(document.getElementById('studentModal')) {
+        document.getElementById('studentModal').addEventListener('click', function(e){
+            if(e.target === this) {
+                this.style.display='none';
+                document.body.style.overflow = '';
+            }
+        });
+    }
+</script>
+<?php endif; ?>
         </div>
     </div>
 </body>
-</html> 
+</html>
