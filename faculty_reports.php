@@ -7,11 +7,15 @@ if (!isset($_SESSION['faculty_id'])) {
 require 'includes/db.php';
 $faculty_id = $_SESSION['faculty_id'];
 // Get section and grade assigned to this faculty
-$section_sql = "SELECT section_id, grade_level_id FROM faculty WHERE faculty_id = ?";
+$section_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 $stmt = $conn->prepare($section_sql);
 $stmt->bind_param('i', $faculty_id);
 $stmt->execute();
-$stmt->bind_result($section_id, $grade_level_id);
+$stmt->bind_result($honorific, $first_name, $middle_name, $last_name, $section_id, $grade_level_id, $level_name);
 $stmt->fetch();
 $stmt->close();
 
@@ -37,9 +41,9 @@ if ($condition) {
 
 // Get all students in this section
 $student_ids = [];
-$stu_sql = "SELECT student_id FROM student_enrollments WHERE grade_level_id = ? AND section_id = ?";
+$stu_sql = "SELECT student_id FROM student_enrollments WHERE section_id = ?";
 $stmt = $conn->prepare($stu_sql);
-$stmt->bind_param('ii', $grade_level_id, $section_id);
+$stmt->bind_param('i', $section_id);
 $stmt->execute();
 $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) $student_ids[] = $row['student_id'];
@@ -155,4 +159,4 @@ if (isset($_POST['export_csv']) && count($reports) > 0) {
         <a href="faculty_dashboard.php" class="btn-back"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>

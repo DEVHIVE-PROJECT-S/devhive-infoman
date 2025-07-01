@@ -8,7 +8,12 @@ require 'includes/db.php';
 $faculty_id = $_SESSION['faculty_id'];
 
 // Get faculty's section and grade level
-$stmt = $conn->prepare("SELECT grade_level_id, section_id FROM faculty WHERE faculty_id = ?");
+$faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
+$stmt = $conn->prepare($faculty_sql);
 $stmt->bind_param('i', $faculty_id);
 $stmt->execute();
 $faculty = $stmt->get_result()->fetch_assoc();
@@ -20,16 +25,27 @@ $students = [];
 $sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, g.level_name, sec.section_name, fb.school_year, fh.household_number
         FROM students s
         JOIN student_enrollments e ON s.student_id = e.student_id
-        JOIN grade_levels g ON e.grade_level_id = g.grade_level_id
         JOIN sections sec ON e.section_id = sec.section_id
+        JOIN grade_levels g ON sec.grade_level_id = g.grade_level_id
         JOIN fourps_beneficiaries fb ON s.student_id = fb.student_id
         JOIN fourps_households fh ON fb.household_id = fh.household_id
-        WHERE e.grade_level_id = ? AND e.section_id = ?";
+        WHERE e.section_id = ?";
 $stmt2 = $conn->prepare($sql);
-$stmt2->bind_param('ii', $grade_level_id, $section_id);
+$stmt2->bind_param('i', $section_id);
 $stmt2->execute();
 $result2 = $stmt2->get_result();
 while ($row = $result2->fetch_assoc()) $students[] = $row;
+
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt3 = $conn->prepare($sql);
+$stmt3->bind_param('i', $student_id);
+$stmt3->execute();
+$result3 = $stmt3->get_result();
+$emergency_contacts = $result3->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">

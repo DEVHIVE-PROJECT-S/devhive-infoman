@@ -107,4 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     </script>
 </body>
-</html> 
+</html>
+<?php
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+?>

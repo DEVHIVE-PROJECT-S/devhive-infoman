@@ -67,6 +67,15 @@ if (isset($_GET['student_id']) && is_numeric($_GET['student_id'])) {
     $stmt->bind_param('i', $sid);
     $stmt->execute();
     $student_visits = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // Get emergency contacts
+    $stmt = $conn->prepare("SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+                            FROM student_emergency_contacts sec
+                            JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+                            WHERE sec.student_id = ?");
+    $stmt->bind_param('i', $sid);
+    $stmt->execute();
+    $emergency_contacts = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 ?>
 <!DOCTYPE html>
@@ -665,10 +674,36 @@ if (isset($_GET['student_id']) && is_numeric($_GET['student_id'])) {
                 <li><b>Notes:</b> <?php echo htmlspecialchars($student_medical['notes']); ?></li>
                 <li><b>Current Medications:</b> <?php echo htmlspecialchars($student_medical['current_medications']); ?></li>
                 <li><b>Immunization Status:</b> <?php echo htmlspecialchars($student_medical['immunization_status']); ?></li>
-                <li><b>Emergency Contact:</b> <?php echo htmlspecialchars($student_medical['emergency_contact_name']); ?> (<?php echo htmlspecialchars($student_medical['emergency_contact_number']); ?>)</li>
-            </ul>
+            <?php endif; ?>
+        <hr style="border:0;border-top:1.5px solid #e0e7ff;margin:18px 0;">
+        <h3 style="font-size:1.1rem;font-weight:600;color:#764ba2;margin-bottom:8px;">Emergency Contacts</h3>
+        <?php if (!empty($emergency_contacts)): ?>
+            <div style="max-height:120px;overflow-y:auto;">
+            <table style="width:100%;font-size:0.98rem;border-collapse:collapse;">
+                <tr style="background:#e0e7ff;color:#764ba2;">
+                    <th style="padding:6px 8px;text-align:left;">Name</th>
+                    <th style="padding:6px 8px;text-align:left;">Relationship</th>
+                    <th style="padding:6px 8px;text-align:left;">Contact</th>
+                    <th style="padding:6px 8px;text-align:left;">Primary</th>
+                </tr>
+                <?php foreach ($emergency_contacts as $contact): ?>
+                <tr style="background:rgba(118,75,162,0.06);">
+                    <td style="padding:6px 8px;"><?php echo htmlspecialchars($contact['contact_name']); ?></td>
+                    <td style="padding:6px 8px;"><?php echo htmlspecialchars($contact['relationship']); ?></td>
+                    <td style="padding:6px 8px;"><?php echo htmlspecialchars($contact['contact_number']); ?></td>
+                    <td style="padding:6px 8px;">
+                        <?php if (!empty($contact['is_primary'])): ?>
+                            <span style="color:#10b981;font-weight:600;">Yes</span>
+                        <?php else: ?>
+                            <span style="color:#a1a1aa;">No</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+            </div>
         <?php else: ?>
-            <div style="color:#f87171;margin-bottom:18px;">No medical profile found.</div>
+            <div style="color:#f87171;">No emergency contacts found.</div>
         <?php endif; ?>
         <hr style="border:0;border-top:1.5px solid #e0e7ff;margin:18px 0;">
         <h3 style="font-size:1.1rem;font-weight:600;color:#764ba2;margin-bottom:8px;">Clinic Visit History</h3>

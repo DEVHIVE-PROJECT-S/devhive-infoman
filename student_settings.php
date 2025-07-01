@@ -4,11 +4,18 @@ if (!isset($_SESSION['student_id'])) { header('Location: login.php'); exit(); }
 require 'includes/db.php';
 $student_id = $_SESSION['student_id'];
 // Fetch student info
-$sql = "SELECT lrn, first_name, middle_name, last_name FROM students WHERE student_id = ?";
+$sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+        FROM students s
+        JOIN student_enrollments e ON s.student_id = e.student_id
+        JOIN sections sec ON e.section_id = sec.section_id
+        JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+        WHERE s.student_id = ?
+        ORDER BY e.school_year DESC LIMIT 1";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $student_id);
 $stmt->execute();
 $student = $stmt->get_result()->fetch_assoc();
+if (!$student) $student = [];
 $success = $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_name'])) {
@@ -47,6 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql_contacts = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt_contacts = $conn->prepare($sql_contacts);
+$stmt_contacts->bind_param('i', $student_id);
+$stmt_contacts->execute();
+$emergency_contacts = $stmt_contacts->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -277,11 +293,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="logo-text">PDMHS</span>
             </div>
             <div class="nav-menu">
-                <a href="student_dashboard.php" class="nav-item"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
+                <a href="student_dashboard.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
                 <a href="student_medical_info.php" class="nav-item"><span class="nav-icon"><i class="fa fa-notes-medical"></i></span> Medical Info</a>
                 <a href="student_visit_history.php" class="nav-item"><span class="nav-icon"><i class="fa fa-history"></i></span> Visit History</a>
                 <a href="student_notifications.php" class="nav-item"><span class="nav-icon"><i class="fa fa-bell"></i></span> Notifications</a>
-                <a href="student_settings.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-cog"></i></span> Settings</a>
+                <a href="student_4pstracker.php" class="nav-item"><span class="nav-icon"><i class="fa fa-users"></i></span> 4P's</a>
+                <a href="student_settings.php" class="nav-item"><span class="nav-icon"><i class="fa fa-cog"></i></span> Settings</a>
             </div>
             <div style="margin-top:auto; padding: 0 20px;">
                 <hr style="border: 1px solid rgba(255,255,255,0.15); margin: 20px 0;">
@@ -337,4 +354,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
     </div>
 </body>
-</html> 
+</html>

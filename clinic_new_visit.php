@@ -289,4 +289,20 @@ foreach ($medications as $med) {
     });
     </script>
 </body>
-</html> 
+</html>
+
+<?php
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+// Use $is_primary to highlight the main contact.
+
+$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    JOIN sections sec ON e.section_id = sec.section_id
+    JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+    WHERE e.section_id = ?";
+?>

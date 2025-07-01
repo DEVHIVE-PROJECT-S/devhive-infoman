@@ -59,6 +59,24 @@ if ($tab === 'summary') {
     $sql = "SELECT COUNT(*) AS total_medications FROM medications";
     $summary['total_medications'] = $conn->query($sql)->fetch_assoc()['total_medications'] ?? 0;
 }
+// To get all emergency contacts for a student:
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+// Use $is_primary to highlight the main contact.
+$student_sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    JOIN sections sec ON e.section_id = sec.section_id
+    JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+    WHERE e.section_id = ?";
+// Faculty SQL for getting faculty details
+$faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -175,4 +193,4 @@ if ($tab === 'summary') {
         <a href="clinic_dashboard.php" class="export-btn" style="margin-top:24px;"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>

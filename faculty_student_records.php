@@ -16,7 +16,12 @@ $stmt->fetch();
 $stmt->close();
 $students = [];
 if ($section_id) {
-    $sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, sec.section_name, g.level_name FROM students s JOIN student_enrollments e ON s.student_id = e.student_id JOIN sections sec ON e.section_id = sec.section_id JOIN grade_levels g ON e.grade_level_id = g.grade_level_id WHERE e.section_id = ? ORDER BY s.last_name, s.first_name";
+    $sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, sec.section_name, gl.level_name
+        FROM students s
+        JOIN student_enrollments e ON s.student_id = e.student_id
+        JOIN sections sec ON e.section_id = sec.section_id
+        JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+        WHERE e.section_id = ? ORDER BY s.last_name, s.first_name";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('i', $section_id);
     $stmt->execute();

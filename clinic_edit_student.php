@@ -8,7 +8,12 @@ require 'includes/db.php';
 $student_id = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
 if (!$student_id) { echo 'Invalid student.'; exit(); }
 // Fetch student info
-$student_sql = "SELECT * FROM students WHERE student_id = ?";
+$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    JOIN sections sec ON e.section_id = sec.section_id
+    JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+    WHERE e.section_id = ?";
 $stmt = $conn->prepare($student_sql);
 $stmt->bind_param('i', $student_id);
 $stmt->execute();
@@ -65,6 +70,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $res = $conn->query("SELECT allergy_id FROM student_allergies WHERE student_id = $student_id");
     while($row = $res->fetch_assoc()) $student_allergies[] = $row['allergy_id'];
 }
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('i', $student_id);
+$stmt->execute();
+$emergency_contacts = $stmt->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -115,4 +129,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </body>
-</html> 
+</html>

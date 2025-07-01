@@ -7,17 +7,35 @@ if (!isset($_SESSION['student_id'])) {
 require 'includes/db.php';
 $student_id = $_SESSION['student_id'];
 // Fetch student info
-$student_sql = "SELECT * FROM students WHERE student_id = ?";
+$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    JOIN sections sec ON e.section_id = sec.section_id
+    JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+    WHERE s.student_id = ?
+    ORDER BY e.school_year DESC LIMIT 1";
 $stmt = $conn->prepare($student_sql);
 $stmt->bind_param('i', $student_id);
 $stmt->execute();
 $student = $stmt->get_result()->fetch_assoc();
-// Fetch enrollment info
-$enroll_sql = "SELECT s.section_name, g.level_name, e.school_year FROM student_enrollments e JOIN sections s ON e.section_id = s.section_id JOIN grade_levels g ON e.grade_level_id = g.grade_level_id WHERE e.student_id = ? ORDER BY e.school_year DESC LIMIT 1";
+if (!$student) {
+    $student = [];
+}
+
+// After fetching enrollment info
+$enroll_sql = "SELECT s.section_name, g.level_name, e.school_year
+FROM student_enrollments e
+JOIN sections s ON e.section_id = s.section_id
+JOIN grade_levels g ON s.grade_level_id = g.grade_level_id
+WHERE e.student_id = ? ORDER BY e.school_year DESC LIMIT 1";
 $stmt = $conn->prepare($enroll_sql);
 $stmt->bind_param('i', $student_id);
 $stmt->execute();
 $enrollment = $stmt->get_result()->fetch_assoc();
+if (!$enrollment) {
+    $enrollment = [];
+}
+
 // Fetch medical profile
 $med_sql = "SELECT * FROM medical_profiles WHERE student_id = ?";
 $stmt = $conn->prepare($med_sql);
@@ -67,6 +85,12 @@ $res = $stmt->get_result();
 if ($row = $res->fetch_assoc()) {
     $fourps_household = $row['household_number'];
 }
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+// Use $is_primary to highlight the main contact.
 ?>
 <!DOCTYPE html>
 <html lang="en">

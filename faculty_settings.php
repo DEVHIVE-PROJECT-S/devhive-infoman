@@ -7,7 +7,11 @@ if (!isset($_SESSION['faculty_id'])) {
 require 'includes/db.php';
 $faculty_id = $_SESSION['faculty_id'];
 // Fetch faculty info
-$sql = "SELECT first_name, middle_name, last_name, username, subject FROM faculty WHERE faculty_id = ?";
+$sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, f.username, f.subject, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $faculty_id);
 $stmt->execute();
@@ -89,4 +93,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="faculty_dashboard.php" class="btn-back"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>

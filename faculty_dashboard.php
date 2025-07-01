@@ -7,7 +7,11 @@ if (!isset($_SESSION['faculty_id'])) {
 require 'includes/db.php';
 // Fetch faculty info
 $faculty_id = $_SESSION['faculty_id'];
-$faculty_sql = "SELECT honorific, first_name, middle_name, last_name, grade_level_id, section_id FROM faculty WHERE faculty_id = ?";
+$faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 $stmt = $conn->prepare($faculty_sql);
 $stmt->bind_param('i', $faculty_id);
 $stmt->execute();
@@ -18,9 +22,12 @@ $faculty_section_id = $faculty['section_id'];
 
 // Fetch students in this faculty's section
 $students = [];
-$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address FROM students s JOIN student_enrollments e ON s.student_id = e.student_id WHERE e.grade_level_id = ? AND e.section_id = ?";
+$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    WHERE e.section_id = ?";
 $stmt2 = $conn->prepare($student_sql);
-$stmt2->bind_param('ii', $faculty_grade_level_id, $faculty_section_id);
+$stmt2->bind_param('i', $faculty_section_id);
 $stmt2->execute();
 $result2 = $stmt2->get_result();
 while ($row = $result2->fetch_assoc()) $students[] = $row;

@@ -28,6 +28,12 @@ while ($row = $res->fetch_assoc()) {
     ];
 }
 // Optionally, add more notifications for profile/password updates if you store them
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+// Use $is_primary to highlight the main contact.
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -269,10 +275,11 @@ while ($row = $res->fetch_assoc()) {
                 <span class="logo-text">PDMHS</span>
             </div>
             <div class="nav-menu">
-                <a href="student_dashboard.php" class="nav-item"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
+                <a href="student_dashboard.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
                 <a href="student_medical_info.php" class="nav-item"><span class="nav-icon"><i class="fa fa-notes-medical"></i></span> Medical Info</a>
                 <a href="student_visit_history.php" class="nav-item"><span class="nav-icon"><i class="fa fa-history"></i></span> Visit History</a>
-                <a href="student_notifications.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-bell"></i></span> Notifications</a>
+                <a href="student_notifications.php" class="nav-item"><span class="nav-icon"><i class="fa fa-bell"></i></span> Notifications</a>
+                <a href="student_4pstracker.php" class="nav-item"><span class="nav-icon"><i class="fa fa-users"></i></span> 4P's</a>
                 <a href="student_settings.php" class="nav-item"><span class="nav-icon"><i class="fa fa-cog"></i></span> Settings</a>
             </div>
             <div style="margin-top:auto; padding: 0 20px;">
@@ -322,4 +329,4 @@ while ($row = $res->fetch_assoc()) {
         </main>
     </div>
 </body>
-</html> 
+</html>
