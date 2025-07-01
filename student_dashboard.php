@@ -58,6 +58,15 @@ if (count($visits) > 0) {
         date('M d, Y h:i A', strtotime($latest['visit_date']))
     ];
 }
+// Fetch 4P's household number (if applicable)
+$fourps_household = null;
+$stmt = $conn->prepare("SELECT fh.household_number FROM fourps_beneficiaries fb JOIN fourps_households fh ON fb.household_id = fh.household_id WHERE fb.student_id = ?");
+$stmt->bind_param('i', $student_id);
+$stmt->execute();
+$res = $stmt->get_result();
+if ($row = $res->fetch_assoc()) {
+    $fourps_household = $row['household_number'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -324,6 +333,7 @@ if (count($visits) > 0) {
                 <a href="student_medical_info.php" class="nav-item"><span class="nav-icon"><i class="fa fa-notes-medical"></i></span> Medical Info</a>
                 <a href="student_visit_history.php" class="nav-item"><span class="nav-icon"><i class="fa fa-history"></i></span> Visit History</a>
                 <a href="student_notifications.php" class="nav-item"><span class="nav-icon"><i class="fa fa-bell"></i></span> Notifications</a>
+                <a href="student_4pstracker.php" class="nav-item"><span class="nav-icon"><i class="fa fa-users"></i></span> 4P's</a>
                 <a href="student_settings.php" class="nav-item"><span class="nav-icon"><i class="fa fa-cog"></i></span> Settings</a>
             </div>
             <div style="margin-top:auto; padding: 0 20px;">
@@ -356,6 +366,9 @@ if (count($visits) > 0) {
                             <span><b>Birthdate:</b> <span class="badge"><?php echo htmlspecialchars($student['birthdate']); ?></span></span>
                             <span><b>Gender:</b> <span class="badge"><?php echo htmlspecialchars($student['gender']); ?></span></span>
                             <span><b>Address:</b> <span class="badge"><?php echo htmlspecialchars($student['address']); ?></span></span>
+                            <?php if ($fourps_household): ?>
+    <span><b>4P's Household Number:</b> <span class="badge"><?php echo htmlspecialchars($fourps_household); ?></span></span>
+<?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -443,4 +456,4 @@ if (count($visits) > 0) {
         </main>
     </div>
 </body>
-</html> 
+</html>

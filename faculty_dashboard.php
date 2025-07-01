@@ -250,6 +250,7 @@ $recent_activity = [
                 <a href="faculty_dashboard.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
                 <a href="faculty_student_records.php" class="nav-item"><span class="nav-icon"><i class="fa fa-users"></i></span> Student Records</a>
                 <a href="faculty_reports.php" class="nav-item"><span class="nav-icon"><i class="fa fa-file-medical"></i></span> Reports</a>
+                <a href="faculty_4pstracker.php" class="nav-item"><span class="nav-icon"><i class="fa fa-id-card"></i></span> 4Ps Tracker</a>
                 <a href="faculty_settings.php" class="nav-item"><span class="nav-icon"><i class="fa fa-cog"></i></span> Settings</a>
             </div>
             <div style="margin-top:auto; padding: 0 20px;">
@@ -312,4 +313,4 @@ $recent_activity = [
         </main>
     </div>
 </body>
-</html> 
+</html>
