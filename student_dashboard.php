@@ -7,17 +7,35 @@ if (!isset($_SESSION['student_id'])) {
 require 'includes/db.php';
 $student_id = $_SESSION['student_id'];
 // Fetch student info
-$student_sql = "SELECT * FROM students WHERE student_id = ?";
+$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    JOIN sections sec ON e.section_id = sec.section_id
+    JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+    WHERE s.student_id = ?
+    ORDER BY e.school_year DESC LIMIT 1";
 $stmt = $conn->prepare($student_sql);
 $stmt->bind_param('i', $student_id);
 $stmt->execute();
 $student = $stmt->get_result()->fetch_assoc();
-// Fetch enrollment info
-$enroll_sql = "SELECT s.section_name, g.level_name, e.school_year FROM student_enrollments e JOIN sections s ON e.section_id = s.section_id JOIN grade_levels g ON e.grade_level_id = g.grade_level_id WHERE e.student_id = ? ORDER BY e.school_year DESC LIMIT 1";
+if (!$student) {
+    $student = [];
+}
+
+// After fetching enrollment info
+$enroll_sql = "SELECT s.section_name, g.level_name, e.school_year
+FROM student_enrollments e
+JOIN sections s ON e.section_id = s.section_id
+JOIN grade_levels g ON s.grade_level_id = g.grade_level_id
+WHERE e.student_id = ? ORDER BY e.school_year DESC LIMIT 1";
 $stmt = $conn->prepare($enroll_sql);
 $stmt->bind_param('i', $student_id);
 $stmt->execute();
 $enrollment = $stmt->get_result()->fetch_assoc();
+if (!$enrollment) {
+    $enrollment = [];
+}
+
 // Fetch medical profile
 $med_sql = "SELECT * FROM medical_profiles WHERE student_id = ?";
 $stmt = $conn->prepare($med_sql);
@@ -67,6 +85,12 @@ $res = $stmt->get_result();
 if ($row = $res->fetch_assoc()) {
     $fourps_household = $row['household_number'];
 }
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+// Use $is_primary to highlight the main contact.
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -80,23 +104,29 @@ if ($row = $res->fetch_assoc()) {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             color: #fff;
+            margin: 0;
+            padding: 0;
         }
         .dashboard-container {
-            display: flex;
             min-height: 100vh;
         }
         .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
             width: 280px;
+            height: 100vh;
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255,255,255,0.2);
             padding: 30px 0;
             display: flex;
             flex-direction: column;
+            z-index: 100;
         }
         .logo-section {
             display: flex;
@@ -154,8 +184,9 @@ if ($row = $res->fetch_assoc()) {
             text-align: center;
         }
         .main-content {
-            flex: 1;
-            padding: 40px 40px 40px 40px;
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
             overflow-y: auto;
         }
         .header {
@@ -309,11 +340,15 @@ if ($row = $res->fetch_assoc()) {
             .main-content { padding: 20px; }
         }
         @media (max-width: 900px) {
-            .dashboard-container { flex-direction: column; }
-            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); flex-direction: row; padding: 10px 0; }
-            .logo-section { margin-bottom: 0; }
-            .nav-menu { flex-direction: row; padding: 0 10px; }
-            .nav-item { margin-bottom: 0; margin-right: 8px; }
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
         }
         @media (max-width: 600px) {
             .main-content { padding: 10px; }

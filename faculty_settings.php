@@ -7,7 +7,11 @@ if (!isset($_SESSION['faculty_id'])) {
 require 'includes/db.php';
 $faculty_id = $_SESSION['faculty_id'];
 // Fetch faculty info
-$sql = "SELECT first_name, middle_name, last_name, username, subject FROM faculty WHERE faculty_id = ?";
+$sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, f.username, f.subject, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $faculty_id);
 $stmt->execute();
@@ -50,20 +54,131 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 600px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 40px; }
-        h2 { font-size: 2rem; margin-bottom: 24px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; color: #e0e7ff; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.12); color: #fff; margin-bottom: 18px; font-size: 1rem; }
-        input:focus { outline: none; border-color: #764ba2; background: rgba(255,255,255,0.18); }
-        .btn { background: #5fc9c4; color: #fff; border: none; border-radius: 8px; padding: 14px 32px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn:hover { background: #195b8b; }
-        .msg-success { background: #22c55e; color: #fff; padding: 10px 18px; border-radius: 8px; margin-bottom: 18px; }
-        .msg-error { background: #ef4444; color: #fff; padding: 10px 18px; border-radius: 8px; margin-bottom: 18px; }
-        .profile-info { margin-bottom: 24px; }
-        .profile-info span { display: block; margin-bottom: 6px; color: #e0e7ff; }
-        a.btn-back { display: inline-block; margin-top: 24px; background: #fff; color: #764ba2; padding: 12px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: background 0.2s; }
-        a.btn-back:hover { background: #e0e7ff; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 60px auto;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            padding: 40px;
+        }
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #e0e7ff;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            margin-bottom: 18px;
+            font-size: 1rem;
+        }
+        input:focus {
+            outline: none;
+            border-color: #764ba2;
+            background: rgba(255,255,255,0.18);
+        }
+        .btn {
+            background: #5fc9c4;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #195b8b;
+        }
+        .msg-success {
+            background: #22c55e;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+        .msg-error {
+            background: #ef4444;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+        .profile-info {
+            margin-bottom: 24px;
+        }
+        .profile-info span {
+            display: block;
+            margin-bottom: 6px;
+            color: #e0e7ff;
+        }
+        a.btn-back {
+            display: inline-block;
+            margin-top: 24px;
+            background: #fff;
+            color: #764ba2;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        a.btn-back:hover {
+            background: #e0e7ff;
+        }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -89,4 +204,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="faculty_dashboard.php" class="btn-back"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>

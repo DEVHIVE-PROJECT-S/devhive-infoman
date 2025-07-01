@@ -8,11 +8,11 @@ require 'includes/db.php';
 $student_id = $_SESSION['student_id'];
 
 // Fetch student info
-$stmt = $conn->prepare("SELECT s.first_name, s.middle_name, s.last_name, s.lrn, s.gender, s.birthdate, s.address, e.section_id, e.grade_level_id, e.school_year, sec.section_name, g.level_name
+$stmt = $conn->prepare("SELECT s.first_name, s.middle_name, s.last_name, s.lrn, s.gender, s.birthdate, s.address, e.section_id, sec.section_name, sec.grade_level_id, g.level_name, e.school_year
     FROM students s
     JOIN student_enrollments e ON s.student_id = e.student_id
     JOIN sections sec ON e.section_id = sec.section_id
-    JOIN grade_levels g ON e.grade_level_id = g.grade_level_id
+    JOIN grade_levels g ON sec.grade_level_id = g.grade_level_id
     WHERE s.student_id = ?
     ORDER BY e.school_year DESC LIMIT 1");
 $stmt->bind_param('i', $student_id);
@@ -85,6 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fourps = $q->get_result()->fetch_assoc();
     }
 }
+
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('i', $student_id);
+$stmt->execute();
+$emergency_contacts = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -95,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
+        body { background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%); font-family: 'Inter', sans-serif; color: #fff; }
         .container { 
             max-width: 1200px;
             margin: 60px auto; 
@@ -323,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Additional Notes: full width -->
             <div class="form-section">
                 <div class="form-section-title">Additional Notes</div>
-                <textarea name="notes" placeholder="Any additional information or remarks"><?php echo htmlspecialchars($fourps['notes'] ?? ''); ?></textarea>
+                <textarea name="notes"><?php echo htmlspecialchars($fourps['notes'] ?? ''); ?></textarea>
             </div>
 
             <?php if (!$fourps): ?>

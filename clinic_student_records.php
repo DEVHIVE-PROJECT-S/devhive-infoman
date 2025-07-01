@@ -6,7 +6,12 @@ if (!isset($_SESSION['clinic_id'])) {
 }
 require 'includes/db.php';
 $students = [];
-$sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, sec.section_name, g.level_name FROM students s JOIN student_enrollments e ON s.student_id = e.student_id JOIN sections sec ON e.section_id = sec.section_id JOIN grade_levels g ON e.grade_level_id = g.grade_level_id ORDER BY s.last_name, s.first_name";
+$sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, e.section_id, sec.section_name, sec.grade_level_id, g.level_name
+FROM students s
+JOIN student_enrollments e ON s.student_id = e.student_id
+JOIN sections sec ON e.section_id = sec.section_id
+JOIN grade_levels g ON sec.grade_level_id = g.grade_level_id
+ORDER BY s.last_name, s.first_name";
 $result = $conn->query($sql);
 while ($row = $result->fetch_assoc()) {
     $students[] = $row;
@@ -24,6 +29,25 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     }
     exit();
 }
+
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+
+$student_sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, s.gender, s.birthdate, s.address, sec.section_name, gl.level_name
+    FROM students s
+    JOIN student_enrollments e ON s.student_id = e.student_id
+    JOIN sections sec ON e.section_id = sec.section_id
+    JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+    WHERE e.section_id = ?";
+
+$faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,8 +59,48 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 1100px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 40px; }
+        body {
+    background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+}
+.dashboard-container {
+    min-height: 100vh;
+}
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255,255,255,0.2);
+    padding: 30px 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+.main-content {
+    margin-left: 280px; /* same as sidebar width */
+    padding: 40px;
+    min-height: 100vh;
+    overflow-y: auto;
+}
+@media (max-width: 900px) {
+    .sidebar {
+        width: 70vw;
+        min-width: 200px;
+        max-width: 320px;
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 16px;
+    }
+}
         h2 { font-size: 2rem; margin-bottom: 24px; }
         .search-bar { margin-bottom: 18px; }
         .search-bar input { width: 300px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
@@ -100,4 +164,4 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         <a href="clinic_dashboard.php" class="btn"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>

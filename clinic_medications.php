@@ -79,8 +79,37 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 900px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 40px; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
         h2 { font-size: 2rem; margin-bottom: 24px; }
         .search-bar { margin-bottom: 18px; }
         .search-bar input { width: 300px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
@@ -206,4 +235,4 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         <a href="clinic_dashboard.php" class="export-btn" style="margin-top:24px;"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 </body>
-</html> 
+</html>

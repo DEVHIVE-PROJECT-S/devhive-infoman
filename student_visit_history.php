@@ -23,6 +23,31 @@ $stmt->bind_param('i', $student_id);
 $stmt->execute();
 $visit_result = $stmt->get_result();
 while ($row = $visit_result->fetch_assoc()) $visits[] = $row;
+
+// Fetch emergency contacts
+$emergency_contacts = [];
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('i', $student_id);
+$stmt->execute();
+$emergency_result = $stmt->get_result();
+while ($row = $emergency_result->fetch_assoc()) $emergency_contacts[] = $row;
+
+$student_sql = "SELECT s.student_id, s.lrn, s.first_name, s.middle_name, s.last_name, sec.section_name, gl.level_name
+        FROM students s
+        JOIN student_enrollments e ON s.student_id = e.student_id
+        JOIN sections sec ON e.section_id = sec.section_id
+        JOIN grade_levels gl ON sec.grade_level_id = gl.grade_level_id
+        WHERE e.section_id = ?";
+
+$faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,23 +60,29 @@ while ($row = $visit_result->fetch_assoc()) $visits[] = $row;
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             color: #fff;
+            margin: 0;
+            padding: 0;
         }
         .dashboard-container {
-            display: flex;
             min-height: 100vh;
         }
         .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
             width: 280px;
+            height: 100vh;
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255,255,255,0.2);
             padding: 30px 0;
             display: flex;
             flex-direction: column;
+            z-index: 100;
         }
         .logo-section {
             display: flex;
@@ -109,8 +140,9 @@ while ($row = $visit_result->fetch_assoc()) $visits[] = $row;
             text-align: center;
         }
         .main-content {
-            flex: 1;
-            padding: 40px 40px 40px 40px;
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
             overflow-y: auto;
         }
         .header {
@@ -211,11 +243,15 @@ while ($row = $visit_result->fetch_assoc()) $visits[] = $row;
             .main-content { padding: 20px; }
         }
         @media (max-width: 900px) {
-            .dashboard-container { flex-direction: column; }
-            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); flex-direction: row; padding: 10px 0; }
-            .logo-section { margin-bottom: 0; }
-            .nav-menu { flex-direction: row; padding: 0 10px; }
-            .nav-item { margin-bottom: 0; margin-right: 8px; }
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
         }
         @media (max-width: 600px) {
             .main-content { padding: 10px; }
@@ -264,10 +300,11 @@ while ($row = $visit_result->fetch_assoc()) $visits[] = $row;
                 <span class="logo-text">PDMHS</span>
             </div>
             <div class="nav-menu">
-                <a href="student_dashboard.php" class="nav-item"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
+                <a href="student_dashboard.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-home"></i></span> Dashboard</a>
                 <a href="student_medical_info.php" class="nav-item"><span class="nav-icon"><i class="fa fa-notes-medical"></i></span> Medical Info</a>
-                <a href="student_visit_history.php" class="nav-item active"><span class="nav-icon"><i class="fa fa-history"></i></span> Visit History</a>
+                <a href="student_visit_history.php" class="nav-item"><span class="nav-icon"><i class="fa fa-history"></i></span> Visit History</a>
                 <a href="student_notifications.php" class="nav-item"><span class="nav-icon"><i class="fa fa-bell"></i></span> Notifications</a>
+                <a href="student_4pstracker.php" class="nav-item"><span class="nav-icon"><i class="fa fa-users"></i></span> 4P's</a>
                 <a href="student_settings.php" class="nav-item"><span class="nav-icon"><i class="fa fa-cog"></i></span> Settings</a>
             </div>
             <div style="margin-top:auto; padding: 0 20px;">
@@ -323,4 +360,4 @@ while ($row = $visit_result->fetch_assoc()) $visits[] = $row;
         </main>
     </div>
 </body>
-</html> 
+</html>

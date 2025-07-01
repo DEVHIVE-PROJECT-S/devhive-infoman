@@ -8,7 +8,12 @@ require 'includes/db.php';
 $faculty_id = $_SESSION['faculty_id'];
 
 // Get faculty's section and grade level
-$stmt = $conn->prepare("SELECT grade_level_id, section_id FROM faculty WHERE faculty_id = ?");
+$faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.section_id, s.grade_level_id, gl.level_name
+    FROM faculty f
+    JOIN sections s ON f.section_id = s.section_id
+    JOIN grade_levels gl ON s.grade_level_id = gl.grade_level_id
+    WHERE f.faculty_id = ?";
+$stmt = $conn->prepare($faculty_sql);
 $stmt->bind_param('i', $faculty_id);
 $stmt->execute();
 $faculty = $stmt->get_result()->fetch_assoc();
@@ -20,16 +25,27 @@ $students = [];
 $sql = "SELECT s.lrn, s.first_name, s.middle_name, s.last_name, g.level_name, sec.section_name, fb.school_year, fh.household_number
         FROM students s
         JOIN student_enrollments e ON s.student_id = e.student_id
-        JOIN grade_levels g ON e.grade_level_id = g.grade_level_id
         JOIN sections sec ON e.section_id = sec.section_id
+        JOIN grade_levels g ON sec.grade_level_id = g.grade_level_id
         JOIN fourps_beneficiaries fb ON s.student_id = fb.student_id
         JOIN fourps_households fh ON fb.household_id = fh.household_id
-        WHERE e.grade_level_id = ? AND e.section_id = ?";
+        WHERE e.section_id = ?";
 $stmt2 = $conn->prepare($sql);
-$stmt2->bind_param('ii', $grade_level_id, $section_id);
+$stmt2->bind_param('i', $section_id);
 $stmt2->execute();
 $result2 = $stmt2->get_result();
 while ($row = $result2->fetch_assoc()) $students[] = $row;
+
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt3 = $conn->prepare($sql);
+$stmt3->bind_param('i', $student_id);
+$stmt3->execute();
+$result3 = $stmt3->get_result();
+$emergency_contacts = $result3->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,7 +56,14 @@ while ($row = $result2->fetch_assoc()) $students[] = $row;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
         .center-card {
             max-width: 1200px;
             margin: 80px auto 0 auto;
@@ -90,6 +113,40 @@ while ($row = $result2->fetch_assoc()) $students[] = $row;
             transition: background 0.2s;
         }
         .btn-back:hover { background: #e0e7ff; }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
     </style>
 </head>
 <body>

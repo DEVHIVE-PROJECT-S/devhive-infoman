@@ -81,22 +81,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     if ($medical) {
-        $sql = "UPDATE medical_profiles SET blood_type=?, disability_status=?, current_medications=?, immunization_status=?, emergency_contact_name=?, emergency_contact_number=?, notes=? WHERE student_id=?";
+        $sql = "UPDATE medical_profiles SET blood_type=?, disability_status=?, current_medications=?, immunization_status=?, notes=? WHERE student_id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sssssssi', $blood_type, $disability_status, $current_medications, $immunization_status, $emergency_contact_name, $emergency_contact_number, $notes, $student_id);
+        $stmt->bind_param('sssssi', $blood_type, $disability_status, $current_medications, $immunization_status, $notes, $student_id);
         if ($stmt->execute()) {
             $success = 'Medical info updated.';
         } else {
             $error = 'Update failed.';
         }
     } else {
-        $sql = "INSERT INTO medical_profiles (student_id, blood_type, disability_status, current_medications, immunization_status, emergency_contact_name, emergency_contact_number, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO medical_profiles (student_id, blood_type, disability_status, current_medications, immunization_status, notes) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('isssssss', $student_id, $blood_type, $disability_status, $current_medications, $immunization_status, $emergency_contact_name, $emergency_contact_number, $notes);
+        $stmt->bind_param('isssss', $student_id, $blood_type, $disability_status, $current_medications, $immunization_status, $notes);
         if ($stmt->execute()) {
             $success = 'Medical info saved.';
         } else {
             $error = 'Save failed.';
+        }
+    }
+    // Emergency contact add
+    $new_name = trim($_POST['new_contact_name'] ?? '');
+    $new_number = trim($_POST['new_contact_number'] ?? '');
+    $new_relationship = trim($_POST['new_contact_relationship'] ?? '');
+    $new_primary = isset($_POST['new_contact_primary']) ? 1 : 0;
+
+    if ($new_name && $new_number) {
+        // Insert into emergency_contacts if not exists
+        $stmt = $conn->prepare("INSERT IGNORE INTO emergency_contacts (contact_name, contact_number, relationship) VALUES (?, ?, ?)");
+        $stmt->bind_param('sss', $new_name, $new_number, $new_relationship);
+        $stmt->execute();
+
+        // Get contact_id
+        $contact_id = $conn->insert_id;
+        if (!$contact_id) {
+            // Already exists, fetch id
+            $stmt = $conn->prepare("SELECT contact_id FROM emergency_contacts WHERE contact_name=? AND contact_number=?");
+            $stmt->bind_param('ss', $new_name, $new_number);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($row = $res->fetch_assoc()) $contact_id = $row['contact_id'];
+        }
+
+        // Link to student
+        if ($contact_id) {
+            // If primary, unset other primaries
+            if ($new_primary) {
+                $conn->query("UPDATE student_emergency_contacts SET is_primary=0 WHERE student_id=$student_id");
+            }
+            $stmt = $conn->prepare("INSERT IGNORE INTO student_emergency_contacts (student_id, contact_id, is_primary) VALUES (?, ?, ?)");
+            $stmt->bind_param('iii', $student_id, $contact_id, $new_primary);
+            $stmt->execute();
         }
     }
     // Refresh data
@@ -110,6 +144,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     while ($row = $res->fetch_assoc()) $student_allergies[] = $row['allergy_id'];
     $selected_immunizations = $immunization_status ? explode(',', $immunization_status) : [];
 }
+// Fetch from emergency_contacts via student_emergency_contacts
+$sql = "SELECT ec.contact_id, ec.contact_name, ec.contact_number, ec.relationship, ec.address, sec.is_primary
+        FROM student_emergency_contacts sec
+        JOIN emergency_contacts ec ON sec.contact_id = ec.contact_id
+        WHERE sec.student_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('i', $student_id);
+$stmt->execute();
+$contacts = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -121,8 +164,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 650px; margin: 60px auto; background: rgba(255,255,255,0.10); border-radius: 22px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 44px 32px; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
+        .container {
+            max-width: 700px; /* wider form */
+            margin: 60px auto;
+            background: rgba(255,255,255,0.10);
+            border-radius: 22px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            padding: 44px 40px;
+        }
         h2 { font-size: 2.1rem; margin-bottom: 28px; letter-spacing: 0.01em; }
         .form-section {
             background: rgba(255,255,255,0.13);
@@ -139,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             letter-spacing: 0.01em;
         }
         label { display: block; margin-bottom: 7px; font-weight: 500; color: #e0e7ff; font-size: 1.04rem; }
-        input, textarea, select {
+        input, select {
             width: 100%;
             padding: 13px 14px;
             border-radius: 9px;
@@ -150,7 +241,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1.01rem;
             transition: border 0.2s, box-shadow 0.2s;
         }
-        input:focus, textarea:focus, select:focus {
+        input:focus, select:focus {
+            outline: none;
+            border-color: #764ba2;
+            background: rgba(255,255,255,0.22);
+            box-shadow: 0 0 0 2px #e0e7ff;
+        }
+
+         textarea{
+            width: 95%;
+            padding: 13px 14px;
+            border-radius: 9px;
+            border: 1.5px solid rgba(255,255,255,0.22);
+            background: rgba(255,255,255,0.15);
+            color: #23213a;
+            margin-bottom: 18px;
+            font-size: 1.01rem;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        textarea:focus{
             outline: none;
             border-color: #764ba2;
             background: rgba(255,255,255,0.22);
@@ -170,11 +279,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 8px;
             font-weight: 400;
             color: #23213a;
-            font-size: 1.01rem;
+            font-size: 1.08rem;
+            vertical-align: middle;
         }
         .checkbox-group input[type=checkbox] {
-            margin-right: 7px;
+            width: 26px;
+            height: 26px;
             accent-color: #764ba2;
+            margin-right: 10px;
+            vertical-align: middle;
+            cursor: pointer;
         }
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -194,9 +308,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .msg-success { background: #22c55e; color: #fff; padding: 10px 18px; border-radius: 8px; margin-bottom: 18px; }
         .msg-error { background: #ef4444; color: #fff; padding: 10px 18px; border-radius: 8px; margin-bottom: 18px; }
-        @media (max-width: 700px) {
-            .container { padding: 18px 4vw; }
-            .form-section { padding: 14px 6vw 10px 6vw; }
+        @media (max-width: 900px) {
+            .container { max-width: 98vw; padding: 18px 2vw; }
         }
         .custom-multiselect select[multiple] {
             width: 100%;
@@ -275,11 +388,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
             <div class="form-section">
-                <div class="form-section-title">Emergency Contact</div>
-                <label for="emergency_contact_name">Emergency Contact Name</label>
-                <input type="text" name="emergency_contact_name" id="emergency_contact_name" value="<?php echo htmlspecialchars($medical['emergency_contact_name'] ?? ''); ?>">
-                <label for="emergency_contact_number">Emergency Contact Number</label>
-                <input type="text" name="emergency_contact_number" id="emergency_contact_number" value="<?php echo htmlspecialchars($medical['emergency_contact_number'] ?? ''); ?>">
+                <div class="form-section-title">Emergency Contacts</div>
+                <?php if (!empty($contacts)): ?>
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%;background:rgba(255,255,255,0.08);border-radius:8px;border-collapse:collapse;margin-bottom:18px;">
+                        <tr style="background:rgba(255,255,255,0.18);color:#764ba2;">
+                            <th style="padding:8px 10px;text-align:left;">Name</th>
+                            <th style="padding:8px 10px;text-align:left;">Contact Number</th>
+                            <th style="padding:8px 10px;text-align:left;">Relationship</th>
+                            <th style="padding:8px 10px;text-align:left;">Primary</th>
+                        </tr>
+                        <?php foreach ($contacts as $contact): ?>
+                        <tr>
+                            <td style="padding:8px 10px;"><?php echo htmlspecialchars($contact['contact_name']); ?></td>
+                            <td style="padding:8px 10px;"><?php echo htmlspecialchars($contact['contact_number']); ?></td>
+                            <td style="padding:8px 10px;"><?php echo htmlspecialchars($contact['relationship']); ?></td>
+                            <td style="padding:8px 10px;">
+                                <?php if (!empty($contact['is_primary'])): ?>
+                                    <span style="color:#10b981;font-weight:600;">[Primary]</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </table>
+                    </div>
+                <?php else: ?>
+                    <div style="color:#f87171;">No emergency contacts found.</div>
+                <?php endif; ?>
+                <hr>
+                <label for="new_contact_name">Add New Contact Name</label>
+                <input type="text" name="new_contact_name" id="new_contact_name">
+                <label for="new_contact_number">Contact Number</label>
+                <input type="text" name="new_contact_number" id="new_contact_number">
+                <label for="new_contact_relationship">Relationship</label>
+                <input type="text" name="new_contact_relationship" id="new_contact_relationship">
+                <div style="display:flex;align-items:center;justify-content:center;margin:18px 0 0 0;">
+                    <input type="checkbox" name="new_contact_primary" id="new_contact_primary" value="1" style="width:28px;height:28px;accent-color:#764ba2;margin-right:12px;">
+                    <label for="new_contact_primary" style="font-size:1.13rem;color:#e0e7ff;cursor:pointer;margin-bottom:0;">Set as Primary</label>
+                </div>
             </div>
             <div class="form-section">
                 <div class="form-section-title">Other Notes</div>
@@ -290,4 +436,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </body>
-</html> 
+</html>
