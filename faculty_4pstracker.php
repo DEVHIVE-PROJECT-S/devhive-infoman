@@ -56,7 +56,14 @@ $emergency_contacts = $result3->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
         .center-card {
             max-width: 1200px;
             margin: 80px auto 0 auto;
@@ -106,6 +113,40 @@ $emergency_contacts = $result3->fetch_all(MYSQLI_ASSOC);
             transition: background 0.2s;
         }
         .btn-back:hover { background: #e0e7ff; }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
     </style>
 </head>
 <body>

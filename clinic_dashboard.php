@@ -93,26 +93,33 @@ if (isset($_GET['student_id']) && is_numeric($_GET['student_id'])) {
             box-sizing: border-box;
         }
         
-        body { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            color: #ffffff;
+            color: #fff;
+            margin: 0;
+            padding: 0;
         }
         
         .dashboard-container {
-            display: flex;
             min-height: 100vh;
+            display: flex;
         }
         
         .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
             width: 280px;
-            background: rgba(255, 255, 255, 0.1);
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
             backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            border-right: 1px solid rgba(255,255,255,0.2);
             padding: 30px 0;
             display: flex;
             flex-direction: column;
+            z-index: 100;
         }
         
         .logo-section {
@@ -179,9 +186,33 @@ if (isset($_GET['student_id']) && is_numeric($_GET['student_id'])) {
         }
         
         .main-content {
-            flex: 1;
-            padding: 30px;
+            margin-left: 280px;
+            padding: 32px 20px; /* less side padding for more space */
+            min-height: 100vh;
             overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .header,
+        .search-section,
+        .stats-grid,
+        .dashboard-grid {
+            width: 100%;
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            box-sizing: border-box;
+        }
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .dashboard-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
         }
         
         .header {
@@ -467,6 +498,23 @@ if (isset($_GET['student_id']) && is_numeric($_GET['student_id'])) {
         @media (max-width: 1200px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 12px;
+            }
+            .stats-grid,
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
             }
         }
         

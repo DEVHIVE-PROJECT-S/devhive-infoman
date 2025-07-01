@@ -88,24 +88,142 @@ $faculty_sql = "SELECT f.honorific, f.first_name, f.middle_name, f.last_name, f.
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 1000px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 40px; }
-        h2 { font-size: 2rem; margin-bottom: 24px; }
-        .tabs { display: flex; gap: 18px; margin-bottom: 24px; }
-        .tab-btn { background: #fff; color: #764ba2; border: none; border-radius: 8px; padding: 10px 22px; font-weight: 600; cursor: pointer; text-decoration: none; }
-        .tab-btn.active, .tab-btn:hover { background: #764ba2; color: #fff; }
-        .export-btn { background: #fff; color: #764ba2; border: none; border-radius: 8px; padding: 10px 22px; font-weight: 600; margin-left: 18px; cursor: pointer; }
-        .export-btn:hover { background: #e0e7ff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 18px; background: rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
-        th, td { padding: 14px 10px; text-align: left; }
-        th { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
-        tr:nth-child(even) { background: rgba(255,255,255,0.04); }
-        tr:hover { background: rgba(255,255,255,0.15); }
-        .no-data { color: #e0e7ff; text-align: center; padding: 30px 0; }
-        .summary-cards { display: flex; gap: 32px; margin-top: 32px; }
-        .summary-card { background: rgba(255,255,255,0.12); border-radius: 14px; padding: 32px; flex: 1; text-align: center; }
-        .summary-title { font-size: 1.2rem; color: #e0e7ff; margin-bottom: 12px; }
-        .summary-value { font-size: 2.2rem; font-weight: 700; color: #fff; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 60px auto;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            padding: 40px;
+        }
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 24px;
+        }
+        .tabs {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .tab-btn.active, .tab-btn:hover {
+            background: #764ba2;
+            color: #fff;
+        }
+        .export-btn {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-weight: 600;
+            margin-left: 18px;
+            cursor: pointer;
+        }
+        .export-btn:hover {
+            background: #e0e7ff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 10px;
+            text-align: left;
+        }
+        th {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.04);
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .no-data {
+            color: #e0e7ff;
+            text-align: center;
+            padding: 30px 0;
+        }
+        .summary-cards {
+            display: flex;
+            gap: 32px;
+            margin-top: 32px;
+        }
+        .summary-card {
+            background: rgba(255,255,255,0.12);
+            border-radius: 14px;
+            padding: 32px;
+            flex: 1;
+            text-align: center;
+        }
+        .summary-title {
+            font-size: 1.2rem;
+            color: #e0e7ff;
+            margin-bottom: 12px;
+        }
+        .summary-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
     </style>
 </head>
 <body>

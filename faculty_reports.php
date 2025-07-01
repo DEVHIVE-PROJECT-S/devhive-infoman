@@ -85,24 +85,147 @@ if (isset($_POST['export_csv']) && count($reports) > 0) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Inter', sans-serif; color: #fff; }
-        .container { max-width: 900px; margin: 60px auto; background: rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 40px; }
-        h2 { font-size: 2rem; margin-bottom: 24px; }
-        form { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 28px; }
-        label { display: block; margin-bottom: 6px; font-weight: 500; color: #e0e7ff; }
-        input, select { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; margin-bottom: 0; }
-        .btn { background: #5fc9c4; color: #fff; border: none; border-radius: 8px; padding: 12px 28px; font-weight: 600; cursor: pointer; }
-        .btn:hover { background: #195b8b; }
-        table { width: 100%; border-collapse: collapse; margin-top: 18px; background: rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
-        th, td { padding: 14px 10px; text-align: left; }
-        th { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
-        tr:nth-child(even) { background: rgba(255,255,255,0.04); }
-        tr:hover { background: rgba(255,255,255,0.15); }
-        .download-btn { background: #fff; color: #764ba2; border: none; border-radius: 6px; padding: 7px 18px; font-weight: 600; cursor: pointer; text-decoration: none; }
-        .download-btn:hover { background: #e0e7ff; }
-        .no-data { color: #e0e7ff; text-align: center; padding: 30px 0; }
-        a.btn-back { display: inline-block; margin-top: 24px; background: #fff; color: #764ba2; padding: 12px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: background 0.2s; }
-        a.btn-back:hover { background: #e0e7ff; }
+        body {
+            background: linear-gradient(135deg, rgb(67, 78, 127) 0%, rgb(107, 92, 122) 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 60px auto;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            padding: 40px;
+        }
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 24px;
+        }
+        form {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin-bottom: 28px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #e0e7ff;
+        }
+        input, select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+        .btn {
+            background: #5fc9c4;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 28px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #195b8b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 10px;
+            text-align: left;
+        }
+        th {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.04);
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .download-btn {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 18px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .download-btn:hover {
+            background: #e0e7ff;
+        }
+        .no-data {
+            color: #e0e7ff;
+            text-align: center;
+            padding: 30px 0;
+        }
+        a.btn-back {
+            display: inline-block;
+            margin-top: 24px;
+            background: #fff;
+            color: #764ba2;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        a.btn-back:hover {
+            background: #e0e7ff;
+        }
+        .dashboard-container {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 280px; /* same as sidebar width */
+            padding: 40px;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70vw;
+                min-width: 200px;
+                max-width: 320px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
     </style>
 </head>
 <body>
